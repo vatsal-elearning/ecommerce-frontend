@@ -4,7 +4,7 @@ import React, { useEffect } from 'react';
 import { ToastType } from './constants';
 
 interface CustomToastProps {
-  type: ToastType;
+  type: string;
   message: string;
   onClose: () => void;
 }
@@ -21,7 +21,7 @@ const CustomToast: React.FC<CustomToastProps> = ({
     }
   }, [message, onClose]);
 
-  if (!message) return null; // Hide if no message
+  if (!message) return null;
 
   return (
     <div className="fixed bottom-5 left-1/2 transform -translate-x-1/2 z-50">

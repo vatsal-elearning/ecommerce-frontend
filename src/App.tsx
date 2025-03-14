@@ -20,7 +20,13 @@ const API_URL = process.env.REACT_APP_API_URL;
 
 const App = () => {
   const [isCartOpen, setCartOpen] = useState(false);
-  const [error, setError] = useState(null);
+  const [alert, setAlert] = useState<{
+    type: ToastType;
+    message: string | null;
+  }>({
+    type: ToastType.ERROR,
+    message: null,
+  });
   const [loading, setIsLoading] = useState(true);
   const [products, setProducts] = useState<IProduct[]>([]);
   const dispatch = useAppDispatch();
@@ -33,7 +39,7 @@ const App = () => {
         const data = response.data?.data || [];
         setProducts(data);
       } catch (err: any) {
-        setError(err.message);
+        setAlert({ type: ToastType.ERROR, message: err.message });
       } finally {
         setIsLoading(false);
       }
@@ -45,10 +51,13 @@ const App = () => {
     dispatch(addToCart({ productId, quantity: 1 }))
       .unwrap()
       .then(() => {
-        //
+        setAlert({
+          type: ToastType.SUCCESS,
+          message: 'Item added to cart successfully.',
+        });
       })
-      .catch((error) => {
-        setError(error);
+      .catch((err: any) => {
+        setAlert({ type: ToastType.ERROR, message: err });
       });
   };
 
@@ -56,52 +65,53 @@ const App = () => {
     return <LoadingFallback />;
   }
 
-  if (error) {
-    return (
-      <CustomToast
-        type={ToastType.ERROR}
-        message={error}
-        onClose={() => setError(null)}
-      />
-    );
-  }
-
   return (
     <>
-      <CartSidebar isOpen={isCartOpen} onClose={() => setCartOpen(false)} />
-      <div className="flex justify-start p-4">
-        <Button
-          color="primary"
-          title="View Cart"
-          className="bg-blue-600 hover:bg-blue-700 text-white font-semibold px-4 py-2 rounded-lg"
-          onClick={() => setCartOpen(true)}
-        >
-          View Cart
-        </Button>
-      </div>
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 p-4">
-        {products.map((product) => (
-          <Card key={product._id} className="flex-col p-2 max-w-sm">
-            <img
-              src={product.image}
-              alt={product.name}
-              className="w-full h-48 object-cover rounded-lg"
-            />
-            <h5 className="text-xl font-bold">{product.name}</h5>
-            <p className="text-lg font-semibold text-gray-700">
-              ${product.price}
-            </p>
+      {alert.message && (
+        <CustomToast
+          type={alert.type}
+          message={alert.message}
+          onClose={() => setAlert({ type: ToastType.ERROR, message: null })}
+        />
+      )}
+      {products.length > 0 && (
+        <>
+          <CartSidebar isOpen={isCartOpen} onClose={() => setCartOpen(false)} />
+          <div className="flex justify-start p-4">
             <Button
               color="primary"
-              title="Add to Cart"
-              className="mt-2 w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold px-4 py-2 rounded-lg"
-              onClick={() => handleAddToCart(product._id)}
+              title={`${isCartOpen ? 'Close' : 'View'} Cart`}
+              className="bg-blue-600 hover:bg-blue-700 text-white font-semibold px-4 py-2 rounded-lg"
+              onClick={() => setCartOpen(!isCartOpen)}
             >
-              Add to Cart
+              {`${isCartOpen ? 'Close' : 'View'} Cart`}
             </Button>
-          </Card>
-        ))}
-      </div>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 p-4">
+            {products.map((product) => (
+              <Card key={product._id} className="flex-col p-2 max-w-sm">
+                <img
+                  src={product.image}
+                  alt={product.name}
+                  className="w-full h-48 object-cover rounded-lg"
+                />
+                <h5 className="text-xl font-bold">{product.name}</h5>
+                <p className="text-lg font-semibold text-gray-700">
+                  ${product.price}
+                </p>
+                <Button
+                  color="primary"
+                  title="Add to Cart"
+                  className="mt-2 w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold px-4 py-2 rounded-lg"
+                  onClick={() => handleAddToCart(product._id)}
+                >
+                  Add to Cart
+                </Button>
+              </Card>
+            ))}
+          </div>
+        </>
+      )}
     </>
   );
 };
