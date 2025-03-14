@@ -1,97 +1,160 @@
-import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
+import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit';
 import axios from 'axios';
 
-// Use environment variable
-const API_URL = process.env.REACT_APP_API_URL;
+interface Product {
+  _id: string;
+  name: string;
+  price: number;
+  image: string;
+}
 
 interface CartItem {
   _id: string;
-  productId: { _id: string; name: string; price: number; image: string };
+  productId: Product;
   quantity: number;
 }
 
-interface CartState {
-  items: CartItem[];
-  status: 'idle' | 'loading' | 'failed';
-}
+const API_URL = process.env.REACT_APP_API_URL;
 
-const initialState: CartState = {
-  items: [],
-  status: 'idle',
-};
+export const fetchCart = createAsyncThunk(
+  'cart/fetchCart',
+  async (_, { rejectWithValue }) => {
+    try {
+      const response = await axios.get(`${API_URL}/cart`);
+      return response.data;
+    } catch (error: any) {
+      return rejectWithValue(
+        error.response?.data?.message || 'Failed to fetch cart.',
+      );
+    }
+  },
+);
 
-// Fetch Cart Items
-export const fetchCart = createAsyncThunk('cart/fetchCart', async () => {
-  const response = await axios.get(`${API_URL}/cart`);
-  return response.data;
-});
-
-// Add Item to Cart
 export const addToCart = createAsyncThunk(
   'cart/addToCart',
-  async (productId: string) => {
-    const response = await axios.post(`${API_URL}/cart`, {
-      productId,
-    });
-    return response.data;
+  async (
+    { productId, quantity }: { productId: string; quantity: number },
+    { rejectWithValue },
+  ) => {
+    try {
+      const response = await axios.post(`${API_URL}/cart`, {
+        productId,
+        quantity,
+      });
+      const productResponse = await axios.get(
+        `${API_URL}/product/${productId}`,
+      );
+      return {
+        _id: response.data._id,
+        productId: productResponse.data,
+        quantity: response.data.quantity,
+      } as CartItem;
+    } catch (error: any) {
+      return rejectWithValue(
+        error.response?.data?.message || 'Failed to add item to cart.',
+      );
+    }
   },
 );
 
-// Update Quantity
 export const updateCartQuantity = createAsyncThunk(
   'cart/updateCartQuantity',
-  async ({ productId, quantity }: { productId: string; quantity: number }) => {
-    const response = await axios.put(`${API_URL}/cart`, {
-      productId,
-      quantity,
-    });
-    return response.data;
+  async (
+    { cartId, quantity }: { cartId: string; quantity: number },
+    { rejectWithValue },
+  ) => {
+    try {
+      await axios.put(`${API_URL}/cart`, { cartId, quantity });
+      return { cartId, quantity };
+    } catch (error: any) {
+      return rejectWithValue(
+        error.response?.data?.message || 'Failed to update cart quantity.',
+      );
+    }
   },
 );
 
-// Remove Item
 export const removeFromCart = createAsyncThunk(
   'cart/removeFromCart',
-  async (productId: string) => {
-    await axios.delete(`${API_URL}/cart`, {
-      data: { productId },
-    });
-    return productId;
+  async (cartId: string, { rejectWithValue }) => {
+    try {
+      await axios.delete(`${API_URL}/cart/${cartId}`);
+      return cartId;
+    } catch (error: any) {
+      return rejectWithValue(
+        error.response?.data?.message || 'Failed to remove item from cart.',
+      );
+    }
   },
 );
 
 const cartSlice = createSlice({
   name: 'cart',
-  initialState,
+  initialState: {
+    items: [] as CartItem[],
+    loading: false,
+    error: null as string | null, // Add error state
+  },
   reducers: {},
   extraReducers: (builder) => {
     builder
+      // Fetch Cart
+      .addCase(fetchCart.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
       .addCase(fetchCart.fulfilled, (state, action) => {
+        state.loading = false;
         state.items = action.payload;
-        state.status = 'idle';
+      })
+      .addCase(fetchCart.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload as string;
+      })
+
+      // Add to Cart
+      .addCase(addToCart.pending, (state) => {
+        state.error = null;
       })
       .addCase(addToCart.fulfilled, (state, action) => {
+        const newItem = action.payload as CartItem;
+
         const existingItem = state.items.find(
-          (item) => item.productId._id === action.payload.productId,
+          (i) => i.productId._id === newItem.productId._id,
         );
         if (existingItem) {
-          existingItem.quantity = action.payload.quantity;
+          existingItem.quantity += newItem.quantity;
         } else {
-          state.items.push(action.payload);
+          state.items.push(newItem);
         }
       })
+      .addCase(addToCart.rejected, (state, action) => {
+        state.error = action.payload as string;
+      })
+
+      // Update Cart Quantity
+      .addCase(updateCartQuantity.pending, (state) => {
+        state.error = null;
+      })
       .addCase(updateCartQuantity.fulfilled, (state, action) => {
-        const item = state.items.find(
-          (item) => item.productId._id === action.payload.productId,
-        );
+        const item = state.items.find((i) => i._id === action.payload.cartId);
         if (item) {
           item.quantity = action.payload.quantity;
         }
       })
+      .addCase(updateCartQuantity.rejected, (state, action) => {
+        state.error = action.payload as string;
+      })
+
+      // Remove from cart
+      .addCase(removeFromCart.pending, (state) => {
+        state.error = null;
+      })
       .addCase(removeFromCart.fulfilled, (state, action) => {
-        state.items = state.items.filter(
-          (item) => item.productId._id !== action.payload,
-        );
+        state.items = state.items.filter((i) => i._id !== action.payload);
+      })
+      .addCase(removeFromCart.rejected, (state, action) => {
+        state.error = action.payload as string;
       });
   },
 });
