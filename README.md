@@ -15,7 +15,7 @@ This is the frontend for an e-commerce application built using **React**, **Flow
 
 ### 1️. Clone the Repository
 
-git clone https://github.com/yourusername/ecommerce-frontend.git
+git clone https://github.com/yourusername/ecommerce-frontend.git  
 cd ecommerce-frontend
 
 ### 2. Install Dependencies
