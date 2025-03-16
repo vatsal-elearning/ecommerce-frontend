@@ -97,10 +97,9 @@ const cartSlice = createSlice({
       })
       .addCase(fetchCart.fulfilled, (state, action) => {
         state.loading = false;
-        state.items = action.payload;
-        state.total = action.payload.reduce(
-          (sum: number, item: any) =>
-            sum + item.productId.price * item.quantity,
+        state.items = Array.isArray(action.payload) ? action.payload : [];
+        state.total = state.items.reduce(
+          (sum, item) => sum + item.productId.price * item.quantity,
           0,
         );
       })

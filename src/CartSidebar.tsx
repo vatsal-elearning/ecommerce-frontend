@@ -7,7 +7,8 @@ import {
   fetchCart,
 } from './redux/slices/cartSlice';
 import { ToastType } from './constants';
-import CustomToast from './CustomToast';
+import CustomToast from './components/CustomToast';
+import { CartItem } from './types';
 
 const CartSidebar = ({
   isOpen,
@@ -23,7 +24,7 @@ const CartSidebar = ({
     type: ToastType.ERROR,
     message: null,
   });
-  const { items, total, loading, error } = useSelector(
+  const { items, total, loading } = useSelector(
     (state: RootState) => state.cart,
   );
   const dispatch = useAppDispatch();
@@ -32,7 +33,7 @@ const CartSidebar = ({
     dispatch(fetchCart());
   }, [dispatch]);
 
-  const handleQty = (item: any, type: string) => {
+  const handleQty = (item: CartItem, type: string) => {
     dispatch(
       updateCartQuantity({
         productId: item.productId._id,
@@ -56,9 +57,13 @@ const CartSidebar = ({
       });
   };
 
-  const handleRemove = (item: any) => {
+  const handleRemove = (item: CartItem) => {
     if (window.confirm('Are you sure want to remove this item?')) {
       dispatch(removeFromCart(item._id));
+      setAlert({
+        type: ToastType.SUCCESS,
+        message: 'Item removed from cart successfully.',
+      });
     }
   };
 

@@ -1,8 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import axios from 'axios';
 import { Button, Card } from 'flowbite-react';
-import CustomToast from './CustomToast';
-import LoadingFallback from './LoadingFallback';
+import CustomToast from './components/CustomToast';
+import LoadingFallback from './components/LoadingFallback';
 import CartSidebar from './CartSidebar';
 import { useAppDispatch } from './redux/store';
 import { addToCart } from './redux/slices/cartSlice';

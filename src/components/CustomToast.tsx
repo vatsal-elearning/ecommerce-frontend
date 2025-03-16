@@ -1,7 +1,7 @@
 import { Toast } from 'flowbite-react';
 import { XCircleIcon, XMarkIcon } from '@heroicons/react/24/solid';
 import React, { useEffect } from 'react';
-import { ToastType } from './constants';
+import { ToastType } from '../constants';
 
 interface CustomToastProps {
   type: string;
