@@ -37,4 +37,5 @@ npm test
 ### Assumption
 
 Min qty for each product: 1
+
 Max qty for each product: 5
